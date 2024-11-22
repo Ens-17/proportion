@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>[ここ何書こう]</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            margin: 20px 0;
+            color: #444;
+        }
+        input[type="file"] {
+            margin: 20px 0;
+        }
+        table {
+            margin: 20px auto;
+            border-collapse: collapse;
+            width: 80%;
+            max-width: 600px;
+            background: white;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #007BFF;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        #error-message {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>USCノーツ解析ツール</h1>
+    <input type="file" id="uscFile" accept=".usc" />
+    <p id="error-message"></p>
+    <table>
+        <thead>
+            <tr>
+                <th>区間</th>
+                <th>ノーツ割合 (%)</th>
+            </tr>
+        </thead>
+        <tbody id="result">
+            <!-- 解析結果がここに挿入されます -->
+        </tbody>
+    </table>
+    <script src="script.js"></script>
+</body>
+</html>
