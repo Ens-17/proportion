@@ -158,11 +158,14 @@
             reader.readAsText(file);
 
             function processNote(note, widths) {
-                const width = Math.min(Math.ceil(note.size * 2), 12); // sizeを幅(整数)に変換し、最大12まで制限
-                if (width >= 1 && width <= 12) {
-                    widths[width - 1]++;
+                const rawWidth = note.size * 2; // sizeを幅に変換（小数含む）
+                const roundedWidth = Math.round(rawWidth); // 四捨五入して整数に変換
+
+                // 範囲外の幅を無視する
+                if (roundedWidth >= 1 && roundedWidth <= 12) {
+                    widths[roundedWidth - 1]++;
                 } else {
-                    console.warn(`幅が範囲外: size=${note.size}, width=${width}`);
+                    console.warn(`無効な幅が検出されました: size=${note.size}, rawWidth=${rawWidth}, roundedWidth=${roundedWidth}`);
                 }
             }
         }
