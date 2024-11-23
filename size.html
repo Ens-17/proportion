@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>こっちが幅</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+        }
+        input[type="file"] {
+            display: block;
+            margin: 10px auto;
+        }
+        #error-message {
+            text-align: center;
+            color: red;
+            font-weight: bold;
+        }
+        table {
+            width: 80%;
+            margin: 20px auto;
+            border-collapse: collapse;
+            background: #fff;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #e9e9e9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <input type="file" id="uscFile" accept=".usc">
+        <p id="error-message"></p>
+        <table>
+            <thead>
+                <tr>
+                    <th>幅</th>
+                    <th>割合</th>
+                </tr>
+            </thead>
+            <tbody id="result"></tbody>
+        </table>
+    </div>
+    <script>
+        document.getElementById("uscFile").addEventListener("change", handleFile);
+
+        function handleFile(event) {
+            const file = event.target.files[0];
+            const errorMessage = document.getElementById("error-message");
+            const resultElement = document.getElementById("result");
+
+            // 初期化
+            errorMessage.textContent = "";
+            resultElement.innerHTML = "";
+
+            if (!file) {
+                errorMessage.textContent = "ファイルを選択してください。";
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function () {
+                try {
+                    const data = JSON.parse(reader.result);
+                    const objects = data.usc?.objects || [];
+                    if (!Array.isArray(objects)) {
+                        throw new Error("USCファイルの形式が不正です。");
+                    }
+
+                    // ノーツ幅ごとのカウント
+                    const widths = Array(12).fill(0); // 1~12幅
+                    let totalNotes = 0;
+
+                    objects.forEach((obj) => {
+                        if (typeof obj.size === "number") {
+                            totalNotes++;
+                            const width = Math.min(Math.ceil(obj.size * 2), 12); // sizeを幅(整数)に変換し、最大12まで制限
+                            if (width >= 1 && width <= 12) {
+                                widths[width - 1]++;
+                            }
+                        }
+                    });
+
+                    if (totalNotes === 0) {
+                        throw new Error("ノーツが検出されませんでした。");
+                    }
+
+                    // 割合を計算して表示
+                    let totalCountedNotes = widths.reduce((acc, count) => acc + count, 0);
+                    if (totalCountedNotes === 0) {
+                        throw new Error("カウントされたノーツ数が0です。");
+                    }
+
+                    widths.forEach((count, index) => {
+                        const widthLabel = `${index + 1} 幅`;
+                        const percentage = ((count / totalCountedNotes) * 100).toFixed(2);
+
+                        const row = document.createElement("tr");
+                        const widthCell = document.createElement("td");
+                        const percentageCell = document.createElement("td");
+
+                        widthCell.textContent = widthLabel;
+                        percentageCell.textContent = `${percentage}%`;
+
+                        row.appendChild(widthCell);
+                        row.appendChild(percentageCell);
+
+                        resultElement.appendChild(row);
+                    });
+                } catch (error) {
+                    errorMessage.textContent = error.message;
+                }
+            };
+
+            reader.onerror = function () {
+                errorMessage.textContent = "ファイルの読み込みに失敗しました。";
+            };
+
+            reader.readAsText(file);
+        }
+    </script>
+</body>
+</html>
