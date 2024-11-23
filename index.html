@@ -45,19 +45,21 @@
     </style>
 </head>
 <body>
-    <input type="file" id="uscFile" accept=".usc" />
-    <p id="error-message"></p>
-    <table>
-        <thead>
-            <tr>
-                <th>区間</th>
-                <th>ノーツ割合 (%)</th>
-            </tr>
-        </thead>
-        <tbody id="result">
+    <div class="container">
+        <input type="file" id="uscFile" accept=".usc" />
+        <p id="error-message"></p>
+        <table>
+            <thead>
+                <tr>
+                    <th>区間</th>
+                    <th>ノーツ割合 (%)</th>
+                </tr>
+            </thead>
+            <tbody id="result">
             <!-- 解析結果がここに挿入されます -->
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+    </div>
     <script src="script.js"></script>
 </body>
 </html>
