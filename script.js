@@ -60,7 +60,7 @@ function handleFile(event) {
 
             let totalCountedNotes = ranges.reduce((acc, count) => acc + count, 0);
             if (totalCountedNotes === 0) {
-                throw new Error("カウントされたノーツ数が0です。");
+                throw new Error("ノーツが置かれていない、もしくはレーン内にありません。");
             }
 
             const rangesLabels = ["左外", "左内", "右内", "右外"];
