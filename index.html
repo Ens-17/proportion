@@ -50,13 +50,28 @@
             color: red;
             font-weight: bold;
         }
+        .button-container {
+            margin: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            color: white;
+            background-color: #007BFF;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <input type="file" id="uscFile" accept=".usc" />
         <p id="error-message"></p>
-        <table>
+        <table id="table-to-capture">
             <thead>
                 <tr>
                     <th>区間</th>
@@ -67,10 +82,15 @@
             <!-- 解析結果がここに挿入されます -->
             </tbody>
         </table>
+        <div class="button-container">
+            <button id="save-image">表を画像として保存</button>
+        </div>
         <a href="size.html">ノーツ幅の使用割合はこちら</a>
     </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
         document.getElementById("uscFile").addEventListener("change", handleFile);
+        document.getElementById("save-image").addEventListener("click", saveTableAsImage);
 
         function handleFile(event) {
             const file = event.target.files[0];
@@ -111,7 +131,7 @@
                                 const laneStart = i;
                                 const laneEnd = i + 1;
     
-                            if (!(rightEdge <= laneStart || leftEdge >= laneEnd)) {
+                                if (!(rightEdge <= laneStart || leftEdge >= laneEnd)) {
                                     lanes[i + laneOffset]++;
                                 }
                             }
@@ -158,10 +178,28 @@
             };
 
             reader.onerror = function () {
-            errorMessage.textContent = "ファイルの読み込みに失敗しました。";
+                errorMessage.textContent = "ファイルの読み込みに失敗しました。";
             };
 
             reader.readAsText(file);
+        }
+
+        function saveTableAsImage() {
+            const tableElement = document.getElementById("table-to-capture");
+            if (!tableElement) {
+                alert("表がありません。解析を実行してください。");
+                return;
+            }
+
+            html2canvas(tableElement).then(canvas => {
+                const link = document.createElement("a");
+                link.download = "表解析結果.png"; // ダウンロード時のファイル名
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+            }).catch(error => {
+                console.error("画像生成に失敗しました:", error);
+                alert("画像生成中にエラーが発生しました。");
+            });
         }
     </script>
 </body>
