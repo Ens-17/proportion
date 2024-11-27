@@ -83,7 +83,7 @@
             </tbody>
         </table>
         <div class="button-container">
-            <button id="save-image">表を画像として保存</button>
+            <button id="save-image">結果を画像として保存</button>
         </div>
         <a href="size.html">ノーツ幅の使用割合はこちら</a>
     </div>
@@ -193,7 +193,7 @@
 
             html2canvas(tableElement).then(canvas => {
                 const link = document.createElement("a");
-                link.download = "表解析結果.png"; // ダウンロード時のファイル名
+                link.download = "置き場所割合.png"; // ダウンロード時のファイル名
                 link.href = canvas.toDataURL("image/png");
                 link.click();
             }).catch(error => {
