@@ -57,6 +57,22 @@
         tr:hover {
             background-color: #e9e9e9;
         }
+        .button-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            color: white;
+            background-color: #007BFF;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
@@ -64,7 +80,7 @@
         <input type="file" id="uscFile" accept=".usc">
         <div class="bonk">小数幅は四捨五入して集計</div>
         <p id="error-message"></p>
-        <table>
+        <table id="table-to-capture">
             <thead>
                 <tr>
                     <th>幅</th>
@@ -73,9 +89,14 @@
             </thead>
             <tbody id="result"></tbody>
         </table>
+        <div class="button-container">
+            <button id="save-image">結果を画像として保存</button>
+        </div>
     </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
         document.getElementById("uscFile").addEventListener("change", handleFile);
+        document.getElementById("save-image").addEventListener("click", saveTableAsImage);
 
         function handleFile(event) {
             const file = event.target.files[0];
@@ -118,9 +139,6 @@
                         }
                     });
 
-                    console.log("解析済みノーツ:", widths);
-                    console.log("総ノーツ数:", totalNotes);
-
                     if (totalNotes === 0) {
                         throw new Error("ノーツが検出されませんでした。");
                     }
@@ -161,14 +179,30 @@
                 const rawWidth = note.size * 2; // sizeを幅に変換（小数含む）
                 const roundedWidth = Math.round(rawWidth); // 四捨五入して整数に変換
 
-                // 範囲外の幅を無視する
                 if (roundedWidth >= 1 && roundedWidth <= 12) {
                     widths[roundedWidth - 1]++;
-                } else {
-                    console.warn(`無効な幅が検出されました: size=${note.size}, rawWidth=${rawWidth}, roundedWidth=${roundedWidth}`);
                 }
             }
+        }
+
+        function saveTableAsImage() {
+            const tableElement = document.getElementById("table-to-capture");
+            if (!tableElement) {
+                alert("表がありません。解析を実行してください。");
+                return;
+            }
+
+            html2canvas(tableElement).then(canvas => {
+                const link = document.createElement("a");
+                link.download = "表解析結果.png"; // ファイル名
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+            }).catch(error => {
+                console.error("画像生成に失敗しました:", error);
+                alert("画像生成中にエラーが発生しました。");
+            });
         }
     </script>
 </body>
 </html>
+
