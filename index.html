@@ -197,7 +197,7 @@
 
             html2canvas(tableElement).then(canvas => {
                 const link = document.createElement("a");
-                link.download = "置き場所割合.png"; // ダウンロード時のファイル名
+                link.download = "ノーツ配置割合.png"; // ダウンロード時のファイル名
                 link.href = canvas.toDataURL("image/png");
                 link.click();
             }).catch(error => {
