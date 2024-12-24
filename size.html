@@ -164,6 +164,9 @@
                         row.appendChild(percentageCell);
 
                         resultElement.appendChild(row);
+
+                        console.log("TotalNotes:", totalCountedNotes);
+                        
                     });
                 } catch (error) {
                     errorMessage.textContent = error.message;
