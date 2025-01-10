@@ -184,7 +184,7 @@
 
             html2canvas(tableElement).then(canvas => {
                 const link = document.createElement("a");
-                link.download = "ノーツタイプ使用割合.png"; // ダウンロード時のファイル名
+                link.download = "type.png"; // ダウンロード時のファイル名
                 link.href = canvas.toDataURL("image/png");
                 link.click();
             }).catch(error => {
