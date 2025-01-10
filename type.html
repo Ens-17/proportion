@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ノーツタイプのほう</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        h1 {
+            margin: 20px 0;
+            color: #444;
+        }
+        input[type="file"] {
+            margin: 20px 0;
+        }
+        table {
+            margin: 20px auto;
+            border-collapse: collapse;
+            width: 80%;
+            max-width: 600px;
+            background: white;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #DDB600;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        #error-message {
+            color: red;
+            font-weight: bold;
+        }
+        .button-container {
+            margin: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            color: white;
+            background-color: #007BFF;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <input type="file" id="uscFile" accept=".usc" />
+        <p id="error-message"></p>
+        <table id="table-to-capture">
+            <thead>
+                <tr>
+                    <th>タイプ</th>
+                    <th>割合 (%)</th>
+                </tr>
+            </thead>
+            <tbody id="result">
+            <!-- 解析結果がここに挿入されます -->
+            </tbody>
+        </table>
+        <div class="button-container">
+            <button id="save-image">結果を画像として保存</button>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script>
+        document.getElementById("uscFile").addEventListener("change", handleFile);
+        document.getElementById("save-image").addEventListener("click", saveTableAsImage);
+
+        function handleFile(event) {
+            const file = event.target.files[0];
+            const errorMessage = document.getElementById("error-message");
+            const resultElement = document.getElementById("result");
+
+            errorMessage.textContent = "";
+            resultElement.innerHTML = "";
+
+            if (!file) {
+                errorMessage.textContent = "ファイルを選択してください。";
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function () {
+                try {
+                    const data = JSON.parse(reader.result);
+                    const objects = data.usc?.objects || [];
+                    if (!Array.isArray(objects)) {
+                        throw new Error("USCファイルの形式が不正です。");
+                    }
+
+                    const typeCounts = {
+                        タップ: 0,
+                        フリック: 0,
+                        トレース: 0,
+                        スライド: 0,
+                        ガイド: 0,
+                        ダメージ: 0
+                    };
+                    let totalNotes = 0;
+
+                    objects.forEach((obj) => {
+                        if (obj.type === "single") {
+                            if (obj.direction) {
+                                typeCounts["フリック"]++;
+                            } else if (obj.trace === true) {
+                                typeCounts["トレース"]++;
+                            } else {
+                                typeCounts["タップ"]++;
+                            }
+                            totalNotes++;
+                        } else if (obj.type === "damage") {
+                            typeCounts["ダメージ"]++;
+                            totalNotes++;
+                        } else if (obj.type === "slide") {
+                            typeCounts["スライド"]++;
+                            totalNotes++;
+                        } else if (obj.type === "guide") {
+                            typeCounts["ガイド"]++;
+                            totalNotes++;
+                        }
+                    });
+
+                    if (totalNotes === 0) {
+                        throw new Error("ノーツが検出されませんでした。");
+                    }
+
+                    Object.entries(typeCounts).forEach(([type, count]) => {
+                        const percentage = ((count / totalNotes) * 100).toFixed(2);
+
+                        const row = document.createElement("tr");
+                        const typeCell = document.createElement("td");
+                        const percentageCell = document.createElement("td");
+
+                        typeCell.textContent = type;
+                        percentageCell.textContent = `${percentage}%`;
+
+                        row.appendChild(typeCell);
+                        row.appendChild(percentageCell);
+                        resultElement.appendChild(row);
+                    });
+                } catch (error) {
+                    errorMessage.textContent = error.message;
+                }
+            };
+
+            reader.onerror = function () {
+                errorMessage.textContent = "ファイルの読み込みに失敗しました。";
+            };
+
+            reader.readAsText(file);
+        }
+        function saveTableAsImage() {
+            const tableElement = document.getElementById("table-to-capture");
+            if (!tableElement) {
+                alert("表がありません。解析を実行してください。");
+                return;
+            }
+
+            html2canvas(tableElement).then(canvas => {
+                const link = document.createElement("a");
+                link.download = "ノーツタイプ使用割合.png"; // ダウンロード時のファイル名
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+            }).catch(error => {
+                console.error("画像生成に失敗しました:", error);
+                alert("画像生成中にエラーが発生しました。");
+            });
+        }
+    </script>
+</body>
+</html>
