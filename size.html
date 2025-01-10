@@ -198,7 +198,7 @@
 
             html2canvas(tableElement).then(canvas => {
                 const link = document.createElement("a");
-                link.download = "ノーツ幅使用割合.png"; // ファイル名
+                link.download = "size.png"; // ファイル名
                 link.href = canvas.toDataURL("image/png");
                 link.click();
             }).catch(error => {
