@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>なにしてん</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: white;
+      touch-action: none;
+    }
+
+    canvas {
+      display: block;
+      position: absolute;
+      top: 40px;
+      left: 0;
+      width: 100vw;
+      height: calc(100vh - 40px);
+    }
+
+    #modeSelect, #clearButton {
+      position: absolute;
+      top: 5px;
+      font-size: 16px;
+      padding: 5px;
+      z-index: 10;
+    }
+
+    #modeSelect {
+      left: 10px;
+    }
+
+    #clearButton {
+      left: 150px;
+    }
+  </style>
+</head>
+<body>
+  <select id="modeSelect">
+    <option value="normal">通常</option>
+    <option value="wavy">波打ち</option>
+    <option value="fade">フェードアウト</option>
+    <option value="particles">パーティクル</option>
+    <option value="distort">ランダム変形</option>
+    <option value="drip">落下</option>
+    <option value="particles2">落下2</option>
+    <option value="fireworks">花火</option>
+  </select>
+  <button id="clearButton">全消し</button>
+
+  <canvas id="drawingCanvas"></canvas>
+
+  <script>
+    const canvas = document.getElementById('drawingCanvas');
+    const ctx = canvas.getContext('2d');
+    const modeSelect = document.getElementById('modeSelect');
+    const clearButton = document.getElementById('clearButton');
+
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight - 40;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    let mode = 'normal';
+    modeSelect.addEventListener('change', () => {
+      mode = modeSelect.value;
+    });
+
+    clearButton.addEventListener('click', () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      waveLines = [];
+      dripLines = [];
+      particles = [];
+      fireworks = [];
+    });
+
+    function varyColor(rgb, amount = 30) {
+      return rgb.map(c => {
+        let newVal = c + Math.floor(Math.random() * amount * 2) - amount;
+        return Math.max(0, Math.min(255, newVal));
+      });
+    }
+
+    function rgbToString(rgb) {
+      return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+    }
+
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+    let lastColor = [Math.random() * 255, Math.random() * 255, Math.random() * 255];
+
+    let waveLines = [];
+    let dripLines = [];
+
+    function startDrawing(x, y) {
+      isDrawing = true;
+      [lastX, lastY] = [x, y];
+    }
+
+    function drawLine(x, y) {
+      if (!isDrawing) return;
+
+      const newColor = varyColor(lastColor, 20);
+      const gradient = ctx.createLinearGradient(lastX, lastY, x, y);
+      gradient.addColorStop(0, rgbToString(lastColor));
+      gradient.addColorStop(1, rgbToString(newColor));
+
+      ctx.strokeStyle = gradient;
+      ctx.lineWidth = 6;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+
+      const points = { x1: lastX, y1: lastY, x2: x, y2: y, color: gradient, time: Date.now() };
+
+      if (mode === 'distort') {
+        const offsetX = Math.random() * 20 - 10;
+        const offsetY = Math.random() * 20 - 10;
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(x + offsetX, y + offsetY);
+      } else {
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(x, y);
+      }
+
+      ctx.stroke();
+
+      if (mode === 'particles') spawnParticles(x, y, lastColor);
+      if (mode === 'particles2') spawnParticles(x, y, lastColor);
+      if (mode === 'wavy') waveLines.push({ ...points });
+      if (mode === 'fireworks') spawnFirework(x, y);
+      if (mode === 'drip') dripLines.push({ ...points });
+
+      [lastX, lastY] = [x, y];
+      lastColor = newColor;
+    }
+
+    function stopDrawing() {
+      isDrawing = false;
+    }
+
+    // --- タッチ／マウス対応 ---
+    canvas.addEventListener('mousedown', e => startDrawing(e.offsetX, e.offsetY));
+    canvas.addEventListener('mousemove', e => drawLine(e.offsetX, e.offsetY));
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
+
+    canvas.addEventListener('touchstart', e => {
+      const touch = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      startDrawing(touch.clientX - rect.left, touch.clientY - rect.top);
+    });
+
+    canvas.addEventListener('touchmove', e => {
+      const touch = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      drawLine(touch.clientX - rect.left, touch.clientY - rect.top);
+      e.preventDefault();
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', stopDrawing);
+    canvas.addEventListener('touchcancel', stopDrawing);
+
+    // --- パーティクル ---
+    let particles = [];
+    function spawnParticles(x, y, color) {
+      for (let i = 0; i < 10; i++) {
+        particles.push({
+          x, y,
+          vx: (Math.random() - 0.5) * 4,
+          vy: (Math.random() - 0.5) * 4,
+          life: 30,
+          color: rgbToString(color)
+        });
+      }
+    }
+
+    function updateParticles() {
+      particles = particles.filter(p => p.life > 0);
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 1;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.fill();
+      });
+    }
+
+    // P2
+    let particles2 = [];
+    function spawnParticles(x, y, color) {
+      for (let i = 0; i < 10; i++) {
+        particles.push({
+          x, y,
+          vx: (Math.random() - 0.5) * 4,
+          vy: (Math.random() - 0.5) * 4,
+          life: 300,
+          color: rgbToString(color),
+          size: 4,
+          gravity: 0.2, // 重力の強さ
+        });
+      }
+    }
+
+    function updateParticles2() {
+      particles = particles.filter(p => p.life > 0);
+      particles.forEach(p => {
+        p.vy += p.gravity;  // 重力を加える
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 1;
+        p.size *= 0.98;  // 徐々に小さく
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.fill();
+      });
+    }
+
+    // firework particles
+    let fireworks = [];
+    function spawnFirework(x, y) {
+      for (let i = 0; i < 50; i++) {
+        const angle = Math.random() * 2 * Math.PI;
+        const speed = Math.random() * 5 + 2;
+        fireworks.push({
+          x, y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 50,
+          color: `hsl(${Math.random() * 360}, 100%, 70%)`
+        });
+      }
+    }
+    function updateFireworks() {
+      fireworks = fireworks.filter(p => p.life > 0);
+      fireworks.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.05;
+        p.life--;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.fill();
+      });
+    }
+
+
+    // --- アニメーション ---
+    function animate() {
+      requestAnimationFrame(animate);
+
+      if (mode === 'fade') {
+        ctx.fillStyle = 'rgba(255,255,255,0.02)';  // フェードの速度を遅くするために0.05 -> 0.02に変更
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+
+      if (mode === 'particles') updateParticles();
+      if (mode === 'particles2') updateParticles2();
+      if (mode === 'fireworks') updateFireworks();
+
+      if (mode === 'wavy') {
+        waveLines.forEach(p => {
+          const t = (Date.now() - p.time) / 200;
+          const wave = Math.sin(t + p.x1 * 0.01) * 5;
+
+          ctx.beginPath();
+          ctx.moveTo(p.x1, p.y1 + wave);
+          ctx.lineTo(p.x2, p.y2 + wave);
+          ctx.strokeStyle = p.color;
+          ctx.lineWidth = 6;
+          ctx.lineCap = 'round';
+          ctx.stroke();
+        });
+      }
+
+      if (mode === 'drip') {
+        dripLines.forEach(p => {
+          p.y1 += 1.5;
+          p.y2 += 1.5;
+
+          ctx.beginPath();
+          ctx.moveTo(p.x1, p.y1);
+          ctx.lineTo(p.x2, p.y2);
+          ctx.strokeStyle = p.color;
+          ctx.lineWidth = 6;
+          ctx.lineCap = 'round';
+          ctx.stroke();
+        });
+      }
+    }
+
+    animate();
+  </script>
+</body>
+</html>
+
