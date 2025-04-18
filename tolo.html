@@ -42,13 +42,10 @@
 <body>
   <select id="modeSelect">
     <option value="normal">通常</option>
-    <option value="wavy">波打ち</option>
-    <option value="fade">ぜーんぶフェードアウト</option>
-    <option value="distort">ランダム変形</option>
     <option value="drip">落下</option>
     <option value="particles2">落下2</option>
-    <option value="particles">名称不明</option>
     <option value="fireworks">花火</option>
+    <option value="splash">スプラッシュ</option>
   </select>
   <button id="clearButton">全消し</button>
 
@@ -59,7 +56,6 @@
     const ctx = canvas.getContext('2d');
     const modeSelect = document.getElementById('modeSelect');
     const clearButton = document.getElementById('clearButton');
-
 
     function resizeCanvas() {
       canvas.width = window.innerWidth;
@@ -79,15 +75,13 @@
       dripLines = [];
       particles = [];
       fireworks = [];
+      smokeParticles = [];
+      cracks = [];
     });
 
     function varyColor(rgb, amount = 30) {
-      return rgb.map(c => {
-        let newVal = c + Math.floor(Math.random() * amount * 2) - amount;
-        return Math.max(0, Math.min(255, newVal));
-      });
+      return rgb.map(c => Math.max(0, Math.min(255, c + Math.floor(Math.random() * amount * 2) - amount)));
     }
-
     function rgbToString(rgb) {
       return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
     }
@@ -99,6 +93,8 @@
 
     let waveLines = [];
     let dripLines = [];
+    let smokeParticles = [];
+    let cracks = [];
 
     function startDrawing(x, y) {
       isDrawing = true;
@@ -132,11 +128,13 @@
 
       ctx.stroke();
 
-      if (mode === 'particles') spawnParticles(x, y, lastColor);
-      if (mode === 'particles2') spawnParticles(x, y, lastColor);
+      if (mode === 'particles' || mode === 'particles2') spawnParticles(x, y, lastColor);
       if (mode === 'wavy') waveLines.push({ ...points });
       if (mode === 'fireworks') spawnFirework(x, y);
       if (mode === 'drip') dripLines.push({ ...points });
+      if (mode === 'splash') spawnSplash(x, y, lastColor);
+      if (mode === 'smoke') spawnSmoke(x, y);
+      if (mode === 'crack') spawnCrack(x, y);
 
       [lastX, lastY] = [x, y];
       lastColor = newColor;
@@ -146,7 +144,6 @@
       isDrawing = false;
     }
 
-    // --- タッチ／マウス対応 ---
     canvas.addEventListener('mousedown', e => startDrawing(e.offsetX, e.offsetY));
     canvas.addEventListener('mousemove', e => drawLine(e.offsetX, e.offsetY));
     canvas.addEventListener('mouseup', stopDrawing);
@@ -168,36 +165,7 @@
     canvas.addEventListener('touchend', stopDrawing);
     canvas.addEventListener('touchcancel', stopDrawing);
 
-    // --- パーティクル ---
     let particles = [];
-    function spawnParticles(x, y, color) {
-      for (let i = 0; i < 10; i++) {
-        particles.push({
-          x, y,
-          vx: (Math.random() - 0.5) * 4,
-          vy: (Math.random() - 0.5) * 4,
-          life: 30,
-          color: rgbToString(color)
-        });
-      }
-    }
-
-    function updateParticles() {
-      particles = particles.filter(p => p.life > 0);
-      particles.forEach(p => {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.life -= 1;
-
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
-        ctx.fillStyle = p.color;
-        ctx.fill();
-      });
-    }
-
-    // P2
-    let particles2 = [];
     function spawnParticles(x, y, color) {
       for (let i = 0; i < 10; i++) {
         particles.push({
@@ -207,20 +175,19 @@
           life: 300,
           color: rgbToString(color),
           size: 4,
-          gravity: 0.2, // 重力の強さ
+          gravity: 0.2,
         });
       }
     }
 
-    function updateParticles2() {
+    function updateParticles() {
       particles = particles.filter(p => p.life > 0);
       particles.forEach(p => {
-        p.vy += p.gravity;  // 重力を加える
+        p.vy += p.gravity;
         p.x += p.vx;
         p.y += p.vy;
-        p.life -= 1;
-        p.size *= 0.98;  // 徐々に小さく
-
+        p.life--;
+        p.size *= 0.98;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fillStyle = p.color;
@@ -228,7 +195,6 @@
       });
     }
 
-    // firework particles
     let fireworks = [];
     function spawnFirework(x, y) {
       for (let i = 0; i < 50; i++) {
@@ -243,6 +209,7 @@
         });
       }
     }
+
     function updateFireworks() {
       fireworks = fireworks.filter(p => p.life > 0);
       fireworks.forEach(p => {
@@ -257,19 +224,84 @@
       });
     }
 
+    function spawnSplash(x, y, color) {
+      for (let i = 0; i < 20; i++) {
+        particles.push({
+          x, y,
+          vx: (Math.random() - 0.5) * 20,
+          vy: (Math.random() - 0.5) * 20,
+          life: 30,
+          color: rgbToString(varyColor(color, 100)),
+          size: Math.random() * 10 + 5,
+          gravity: 0.5,
+        });
+      }
+    }
 
-    // --- アニメーション ---
+    function spawnSmoke(x, y) {
+      for (let i = 0; i < 5; i++) {
+        smokeParticles.push({
+          x, y,
+          vx: (Math.random() - 0.5) * 1,
+          vy: -Math.random() * 1,
+          size: 20,
+          alpha: 0.5,
+          life: 100
+        });
+      }
+    }
+
+    function updateSmoke() {
+      smokeParticles = smokeParticles.filter(p => p.life > 0);
+      smokeParticles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.size += 0.3;
+        p.alpha -= 0.005;
+        p.life--;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(50, 50, 50, ${p.alpha})`;
+        ctx.fill();
+      });
+    }
+
+    function spawnCrack(x, y) {
+      const branches = 5;
+      for (let i = 0; i < branches; i++) {
+        const angle = Math.random() * 2 * Math.PI;
+        const length = Math.random() * 30 + 20;
+        const endX = x + Math.cos(angle) * length;
+        const endY = y + Math.sin(angle) * length;
+        cracks.push({ x1: x, y1: y, x2: endX, y2: endY, life: 100 });
+      }
+    }
+
+    function updateCracks() {
+      cracks = cracks.filter(c => c.life > 0);
+      cracks.forEach(c => {
+        ctx.beginPath();
+        ctx.moveTo(c.x1, c.y1);
+        ctx.lineTo(c.x2, c.y2);
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        c.life--;
+      });
+    }
+
     function animate() {
       requestAnimationFrame(animate);
 
       if (mode === 'fade') {
-        ctx.fillStyle = 'rgba(255,255,255,0.02)';  // フェードの速度を遅くするために0.05 -> 0.02に変更
+        ctx.fillStyle = 'rgba(255,255,255,0.02)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
 
-      if (mode === 'particles') updateParticles();
-      if (mode === 'particles2') updateParticles2();
+      if (mode === 'particles' || mode === 'particles2' || mode === 'splash') updateParticles();
       if (mode === 'fireworks') updateFireworks();
+      if (mode === 'smoke') updateSmoke();
+      if (mode === 'crack') updateCracks();
 
       if (mode === 'wavy') {
         waveLines.forEach(p => {
@@ -306,4 +338,3 @@
   </script>
 </body>
 </html>
-
