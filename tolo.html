@@ -1,340 +1,227 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+  <title>ぼんく</title>
+  <meta name="viewport" content="width=device-width, initial-scale=0.6, maximum-scale=1, user-scalable=no">
   <meta charset="UTF-8">
-  <title>なにしてん</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    html, body {
+    body {
+      font-family: sans-serif;
+      text-align: center;
       margin: 0;
-      padding: 0;
-      overflow: hidden;
-      background: white;
-      touch-action: none;
+      padding-bottom: 200px; 
     }
-
-    canvas {
-      display: block;
-      position: absolute;
-      top: 40px;
+    .grid {
+      display: grid;
+      grid-template-rows: repeat(6, 1fr);
+      grid-row-gap: 10px;
+      justify-content: center;
+      margin-top: 30px;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: repeat(5, 60px);
+      grid-column-gap: 10px;
+      justify-content: center;
+    }
+    .cell {
+      width: 60px;
+      height: 60px;
+      font-size: 32px;
+      border: 2px solid #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-transform: uppercase;
+      background-color: white;
+    }
+    .correct {
+      background-color: #6aaa64;
+      color: white;
+    }
+    .present {
+      background-color: #c9b458;
+      color: white;
+    }
+    .absent {
+      background-color: #787c7e;
+      color: white;
+    }
+    .keyboard {
+      position: fixed;
+      bottom: 0;
       left: 0;
-      width: 100vw;
-      height: calc(100vh - 40px);
+      right: 0;
+      background-color: #f3f3f3;
+      padding: 10px 0;
+      border-top: 2px solid #ccc;
     }
-
-    #modeSelect, #clearButton {
-      position: absolute;
-      top: 5px;
-      font-size: 16px;
-      padding: 5px;
-      z-index: 10;
+    .key {
+      display: inline-block;
+      margin: 5px;
+      padding: 10px 15px;
+      font-size: 20px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      background-color: #eee;
+      cursor: pointer;
+      user-select: none;
     }
-
-    #modeSelect {
-      left: 10px;
+    .key:hover {
+      background-color: #ddd;
     }
-
-    #clearButton {
-      left: 150px;
+    .action-key {
+      background-color: #bbb;
+    }
+    .restart-key {
+      background-color: #6aaa64 !important;
+      color: white;
     }
   </style>
 </head>
 <body>
-  <select id="modeSelect">
-    <option value="normal">通常</option>
-    <option value="drip">落下</option>
-    <option value="particles2">落下2</option>
-    <option value="fireworks">花火</option>
-    <option value="splash">スプラッシュ</option>
-  </select>
-  <button id="clearButton">全消し</button>
 
-  <canvas id="drawingCanvas"></canvas>
+<div class="grid" id="grid">
+</div>
 
-  <script>
-    const canvas = document.getElementById('drawingCanvas');
-    const ctx = canvas.getContext('2d');
-    const modeSelect = document.getElementById('modeSelect');
-    const clearButton = document.getElementById('clearButton');
+<div class="keyboard" id="keyboard">
+</div>
 
-    function resizeCanvas() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight - 40;
+<script src="word.js"></script>
+<script>
+const answer = wordList[Math.floor(Math.random() * wordList.length)];
+let currentInput = "";
+let currentRow = 0;
+let gameOver = false;
+
+const rows = [
+  "QWERTYUIOP",
+  "ASDFGHJKL",
+  "ZXCVBNM"
+];
+
+function createGrid() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  for (let r = 0; r < 6; r++) {
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.id = 'row-' + r;
+    for (let c = 0; c < 5; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.id = `cell-${r}-${c}`;
+      row.appendChild(cell);
     }
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
+    grid.appendChild(row);
+  }
+}
 
-    let mode = 'normal';
-    modeSelect.addEventListener('change', () => {
-      mode = modeSelect.value;
-    });
+function createKeyboard() {
+  const keyboard = document.getElementById('keyboard');
+  keyboard.innerHTML = '';
 
-    clearButton.addEventListener('click', () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      waveLines = [];
-      dripLines = [];
-      particles = [];
-      fireworks = [];
-      smokeParticles = [];
-      cracks = [];
-    });
-
-    function varyColor(rgb, amount = 30) {
-      return rgb.map(c => Math.max(0, Math.min(255, c + Math.floor(Math.random() * amount * 2) - amount)));
+  rows.forEach(row => {
+    for (let char of row) {
+      const key = document.createElement('div');
+      key.className = 'key';
+      key.textContent = char;
+      key.onclick = () => pressKey(char);
+      keyboard.appendChild(key);
     }
-    function rgbToString(rgb) {
-      return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+    const br = document.createElement('br');
+    keyboard.appendChild(br);
+  });
+
+  const enterKey = document.createElement('div');
+  enterKey.className = 'key action-key';
+  enterKey.id = 'enter-key';
+  enterKey.textContent = 'ENTER';
+  enterKey.onclick = () => handleEnter();
+  keyboard.appendChild(enterKey);
+
+  const backspaceKey = document.createElement('div');
+  backspaceKey.className = 'key action-key';
+  backspaceKey.textContent = '⬅';
+  backspaceKey.onclick = () => deleteKey();
+  keyboard.appendChild(backspaceKey);
+}
+
+function pressKey(char) {
+  if (gameOver) return;
+  if (currentInput.length >= 5) return;
+  currentInput += char;
+  updateGrid();
+}
+
+function deleteKey() {
+  if (gameOver) return;
+  currentInput = currentInput.slice(0, -1);
+  updateGrid();
+}
+
+function updateGrid() {
+  for (let i = 0; i < 5; i++) {
+    const cell = document.getElementById(`cell-${currentRow}-${i}`);
+    cell.textContent = currentInput[i] || '';
+    cell.className = 'cell'; // 色リセット
+  }
+}
+
+function handleEnter() {
+  if (!gameOver) {
+    checkGuess();
+  } else {
+    restartGame();
+  }
+}
+
+function checkGuess() {
+  if (currentInput.length !== 5) {
+    return; // 何も起こさない
+  }
+
+  let correctCount = 0;
+
+  for (let i = 0; i < 5; i++) {
+    const cell = document.getElementById(`cell-${currentRow}-${i}`);
+    if (currentInput[i] === answer[i]) {
+      cell.className = 'cell correct';
+      correctCount++;
+    } else if (answer.includes(currentInput[i])) {
+      cell.className = 'cell present';
+    } else {
+      cell.className = 'cell absent';
     }
+  }
 
-    let isDrawing = false;
-    let lastX = 0;
-    let lastY = 0;
-    let lastColor = [Math.random() * 255, Math.random() * 255, Math.random() * 255];
+  if (correctCount === 5 || currentRow === 5) {
+    gameOver = true;
+    const enterKey = document.getElementById('enter-key');
+    enterKey.textContent = 'RESTART';
+    enterKey.classList.remove('action-key');
+    enterKey.classList.add('restart-key');
+  } else {
+    currentRow++;
+    currentInput = '';
+  }
+}
 
-    let waveLines = [];
-    let dripLines = [];
-    let smokeParticles = [];
-    let cracks = [];
+function restartGame() {
+  currentInput = '';
+  currentRow = 0;
+  gameOver = false;
+  createGrid();
+  const enterKey = document.getElementById('enter-key');
+  enterKey.textContent = 'ENTER';
+  enterKey.classList.remove('restart-key');
+  enterKey.classList.add('action-key');
+}
 
-    function startDrawing(x, y) {
-      isDrawing = true;
-      [lastX, lastY] = [x, y];
-    }
+// 初期セットアップ
+createGrid();
+createKeyboard();
+</script>
 
-    function drawLine(x, y) {
-      if (!isDrawing) return;
-
-      const newColor = varyColor(lastColor, 20);
-      const gradient = ctx.createLinearGradient(lastX, lastY, x, y);
-      gradient.addColorStop(0, rgbToString(lastColor));
-      gradient.addColorStop(1, rgbToString(newColor));
-
-      ctx.strokeStyle = gradient;
-      ctx.lineWidth = 6;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-
-      const points = { x1: lastX, y1: lastY, x2: x, y2: y, color: gradient, time: Date.now() };
-
-      if (mode === 'distort') {
-        const offsetX = Math.random() * 20 - 10;
-        const offsetY = Math.random() * 20 - 10;
-        ctx.moveTo(lastX, lastY);
-        ctx.lineTo(x + offsetX, y + offsetY);
-      } else {
-        ctx.moveTo(lastX, lastY);
-        ctx.lineTo(x, y);
-      }
-
-      ctx.stroke();
-
-      if (mode === 'particles' || mode === 'particles2') spawnParticles(x, y, lastColor);
-      if (mode === 'wavy') waveLines.push({ ...points });
-      if (mode === 'fireworks') spawnFirework(x, y);
-      if (mode === 'drip') dripLines.push({ ...points });
-      if (mode === 'splash') spawnSplash(x, y, lastColor);
-      if (mode === 'smoke') spawnSmoke(x, y);
-      if (mode === 'crack') spawnCrack(x, y);
-
-      [lastX, lastY] = [x, y];
-      lastColor = newColor;
-    }
-
-    function stopDrawing() {
-      isDrawing = false;
-    }
-
-    canvas.addEventListener('mousedown', e => startDrawing(e.offsetX, e.offsetY));
-    canvas.addEventListener('mousemove', e => drawLine(e.offsetX, e.offsetY));
-    canvas.addEventListener('mouseup', stopDrawing);
-    canvas.addEventListener('mouseout', stopDrawing);
-
-    canvas.addEventListener('touchstart', e => {
-      const touch = e.touches[0];
-      const rect = canvas.getBoundingClientRect();
-      startDrawing(touch.clientX - rect.left, touch.clientY - rect.top);
-    });
-
-    canvas.addEventListener('touchmove', e => {
-      const touch = e.touches[0];
-      const rect = canvas.getBoundingClientRect();
-      drawLine(touch.clientX - rect.left, touch.clientY - rect.top);
-      e.preventDefault();
-    }, { passive: false });
-
-    canvas.addEventListener('touchend', stopDrawing);
-    canvas.addEventListener('touchcancel', stopDrawing);
-
-    let particles = [];
-    function spawnParticles(x, y, color) {
-      for (let i = 0; i < 10; i++) {
-        particles.push({
-          x, y,
-          vx: (Math.random() - 0.5) * 4,
-          vy: (Math.random() - 0.5) * 4,
-          life: 300,
-          color: rgbToString(color),
-          size: 4,
-          gravity: 0.2,
-        });
-      }
-    }
-
-    function updateParticles() {
-      particles = particles.filter(p => p.life > 0);
-      particles.forEach(p => {
-        p.vy += p.gravity;
-        p.x += p.vx;
-        p.y += p.vy;
-        p.life--;
-        p.size *= 0.98;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = p.color;
-        ctx.fill();
-      });
-    }
-
-    let fireworks = [];
-    function spawnFirework(x, y) {
-      for (let i = 0; i < 50; i++) {
-        const angle = Math.random() * 2 * Math.PI;
-        const speed = Math.random() * 5 + 2;
-        fireworks.push({
-          x, y,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed,
-          life: 50,
-          color: `hsl(${Math.random() * 360}, 100%, 70%)`
-        });
-      }
-    }
-
-    function updateFireworks() {
-      fireworks = fireworks.filter(p => p.life > 0);
-      fireworks.forEach(p => {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy += 0.05;
-        p.life--;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
-        ctx.fillStyle = p.color;
-        ctx.fill();
-      });
-    }
-
-    function spawnSplash(x, y, color) {
-      for (let i = 0; i < 20; i++) {
-        particles.push({
-          x, y,
-          vx: (Math.random() - 0.5) * 20,
-          vy: (Math.random() - 0.5) * 20,
-          life: 30,
-          color: rgbToString(varyColor(color, 100)),
-          size: Math.random() * 10 + 5,
-          gravity: 0.5,
-        });
-      }
-    }
-
-    function spawnSmoke(x, y) {
-      for (let i = 0; i < 5; i++) {
-        smokeParticles.push({
-          x, y,
-          vx: (Math.random() - 0.5) * 1,
-          vy: -Math.random() * 1,
-          size: 20,
-          alpha: 0.5,
-          life: 100
-        });
-      }
-    }
-
-    function updateSmoke() {
-      smokeParticles = smokeParticles.filter(p => p.life > 0);
-      smokeParticles.forEach(p => {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.size += 0.3;
-        p.alpha -= 0.005;
-        p.life--;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(50, 50, 50, ${p.alpha})`;
-        ctx.fill();
-      });
-    }
-
-    function spawnCrack(x, y) {
-      const branches = 5;
-      for (let i = 0; i < branches; i++) {
-        const angle = Math.random() * 2 * Math.PI;
-        const length = Math.random() * 30 + 20;
-        const endX = x + Math.cos(angle) * length;
-        const endY = y + Math.sin(angle) * length;
-        cracks.push({ x1: x, y1: y, x2: endX, y2: endY, life: 100 });
-      }
-    }
-
-    function updateCracks() {
-      cracks = cracks.filter(c => c.life > 0);
-      cracks.forEach(c => {
-        ctx.beginPath();
-        ctx.moveTo(c.x1, c.y1);
-        ctx.lineTo(c.x2, c.y2);
-        ctx.strokeStyle = 'black';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        c.life--;
-      });
-    }
-
-    function animate() {
-      requestAnimationFrame(animate);
-
-      if (mode === 'fade') {
-        ctx.fillStyle = 'rgba(255,255,255,0.02)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-      }
-
-      if (mode === 'particles' || mode === 'particles2' || mode === 'splash') updateParticles();
-      if (mode === 'fireworks') updateFireworks();
-      if (mode === 'smoke') updateSmoke();
-      if (mode === 'crack') updateCracks();
-
-      if (mode === 'wavy') {
-        waveLines.forEach(p => {
-          const t = (Date.now() - p.time) / 200;
-          const wave = Math.sin(t + p.x1 * 0.01) * 5;
-
-          ctx.beginPath();
-          ctx.moveTo(p.x1, p.y1 + wave);
-          ctx.lineTo(p.x2, p.y2 + wave);
-          ctx.strokeStyle = p.color;
-          ctx.lineWidth = 6;
-          ctx.lineCap = 'round';
-          ctx.stroke();
-        });
-      }
-
-      if (mode === 'drip') {
-        dripLines.forEach(p => {
-          p.y1 += 1.5;
-          p.y2 += 1.5;
-
-          ctx.beginPath();
-          ctx.moveTo(p.x1, p.y1);
-          ctx.lineTo(p.x2, p.y2);
-          ctx.strokeStyle = p.color;
-          ctx.lineWidth = 6;
-          ctx.lineCap = 'round';
-          ctx.stroke();
-        });
-      }
-    }
-
-    animate();
-  </script>
 </body>
 </html>
