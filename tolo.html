@@ -208,14 +208,7 @@ function checkGuess() {
 }
 
 function restartGame() {
-  currentInput = '';
-  currentRow = 0;
-  gameOver = false;
-  createGrid();
-  const enterKey = document.getElementById('enter-key');
-  enterKey.textContent = 'ENTER';
-  enterKey.classList.remove('restart-key');
-  enterKey.classList.add('action-key');
+  window.location.reload();
 }
 
 // 初期セットアップ
