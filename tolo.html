@@ -136,7 +136,7 @@ function createKeyboard() {
   const enterKey = document.createElement('div');
   enterKey.className = 'key action-key';
   enterKey.id = 'enter-key';
-  enterKey.textContent = 'ENTER';
+  enterKey.textContent = 'Answer';
   enterKey.onclick = () => handleEnter();
   keyboard.appendChild(enterKey);
 
@@ -164,7 +164,7 @@ function updateGrid() {
   for (let i = 0; i < 5; i++) {
     const cell = document.getElementById(`cell-${currentRow}-${i}`);
     cell.textContent = currentInput[i] || '';
-    cell.className = 'cell'; // 色リセット
+    cell.className = 'cell'; 
   }
 }
 
@@ -178,7 +178,7 @@ function handleEnter() {
 
 function checkGuess() {
   if (currentInput.length !== 5) {
-    return; // 何も起こさない
+    return; 
   }
 
   let correctCount = 0;
@@ -211,7 +211,7 @@ function restartGame() {
   window.location.reload();
 }
 
-// 初期セットアップ
+  
 createGrid();
 createKeyboard();
 </script>
