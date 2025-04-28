@@ -16,6 +16,11 @@ const wordList = [
   "EBBED", "WALTZ", "HATCH", "MAXIM", "OVERT",
   "SNARE", "TOXIC", "TRAIT", "VOGUE", "WEDGE",
   "YIELD", "DIGIT", "EPOCH", "GLORY", "INCUR",
-  "ANKLE", "BLAME", "STEEP", "UNITY", "TRAIN"
+  "ANKLE", "BLAME", "STEEP", "UNITY", "TRAIN",
+  "GRAPE", "LEMON", "MELON", "GREEN", "CHAOS"
 ];
+
+/*
+  "", "", "", "", "",
+*/
 
