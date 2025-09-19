@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>♝</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 10px;
+      background: #040404;
+    }
+    .card {
+      background: #2c3e50;
+      color: #fff;
+      border-radius: 10px;
+      padding: 15px;
+      margin: 15px 0;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    .stack {
+      font-size: 48px;
+      font-weight: bold;
+      margin: 20px 0;
+    }
+    .buttons button {
+      font-size: 20px;
+      margin: 10px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .red {
+      background: #e74c3c;
+      color: #fff;
+    }
+    .black {
+      background: #000;
+      color: #fff;
+    }
+    .section-title {
+      font-size: 22px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      text-decoration: underline;
+    }
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .controls button {
+      flex: 1;
+      min-width: 80px;
+      max-width: 120px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #fff;
+      color: #2c3e50;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="stack" id="stack">1</div>
+    <div class="buttons">
+      <button class="red" onclick="play('赤')">　<br>　</button>
+      <button class="black" onclick="play('黒')">　<br>　</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">ハイスコア</div>
+    <div id="highscore">0</div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">最近の結果</div>
+    <div id="results"></div>
+  </div>
+
+  <div class="card">
+    <div class="controls">
+      <button onclick="saveSettings()">設定保存</button>
+      <button onclick="loadSettings()">読み込み</button>
+      <button onclick="deleteSettings()">設定削除</button>
+    </div>
+  </div>
+
+  <script>
+    let stack = 1;
+    let highscore = 0;
+    let results = [];
+
+    function play(choice) {
+      const win = Math.random() < 0.5; // 50%勝率
+      if (win) {
+        stack *= 2;
+      } else {
+        results.unshift(`敗北: ${choice} | ターン ${Math.log2(stack)} | スコア ${stack}`);
+        stack = 1;
+      }
+      if (stack > highscore) highscore = stack;
+      updateDisplay();
+    }
+
+    function updateDisplay() {
+      document.getElementById("stack").innerText = stack;
+      document.getElementById("highscore").innerText = highscore;
+      document.getElementById("results").innerHTML = results.slice(0, 5).join('<br>');
+    }
+
+    function saveSettings() {
+      localStorage.setItem("doubleup_highscore", highscore);
+    }
+
+    function loadSettings() {
+      const saved = localStorage.getItem("doubleup_highscore");
+      if (saved !== null) {
+        highscore = parseInt(saved);
+        updateDisplay();
+      } else {
+      }
+    }
+
+    function deleteSettings() {
+      localStorage.removeItem("doubleup_highscore");
+      highscore = 0;
+      updateDisplay();
+    }
+
+    updateDisplay();
+  </script>
+</body>
+</html>
+
