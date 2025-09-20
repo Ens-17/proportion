@@ -23,7 +23,12 @@
     .stack {
       font-size: 48px;
       font-weight: bold;
-      margin: 20px 0;
+      margin: 20px 0 10px 0;
+    }
+    .probability {
+      font-size: 16px;
+      margin-bottom: 10px;
+      color: #ddd;
     }
     .buttons button {
       font-size: 20px;
@@ -70,6 +75,7 @@
 <body>
   <div class="card">
     <div class="stack" id="stack">1</div>
+    <div class="probability" id="probability">100%</div>
     <div class="buttons">
       <button class="red" onclick="play('赤')">　<br>　</button>
       <button class="black" onclick="play('黒')">　<br>　</button>
@@ -79,6 +85,7 @@
   <div class="card">
     <div class="section-title">ハイスコア</div>
     <div id="highscore">0</div>
+    <div class="probability" id="highscoreProbability">100%</div>
   </div>
 
   <div class="card">
@@ -88,9 +95,9 @@
 
   <div class="card">
     <div class="controls">
-      <button onclick="saveSettings()">設定保存</button>
+      <button onclick="saveSettings()">保存</button>
       <button onclick="loadSettings()">読み込み</button>
-      <button onclick="deleteSettings()">設定削除</button>
+      <button onclick="deleteSettings()">削除</button>
     </div>
   </div>
 
@@ -123,7 +130,23 @@
 
     function updateDisplay() {
       document.getElementById("stack").innerText = stack;
+
+      // 現在スコアの確率
+      const turns = Math.log2(stack);
+      const probability = (100 * Math.pow(0.5, turns)).toFixed(5);
+      document.getElementById("probability").innerText = `${probability}%`;
+
+      // ハイスコア表示と確率
       document.getElementById("highscore").innerText = highscore;
+      if (highscore > 0) {
+        const highTurns = Math.log2(highscore);
+        const highProbability = (100 * Math.pow(0.5, highTurns)).toFixed(5);
+        document.getElementById("highscoreProbability").innerText = `${highProbability}%`;
+      } else {
+        document.getElementById("highscoreProbability").innerText = `100%`;
+      }
+
+      // 最近の結果
       document.getElementById("results").innerHTML = results.slice(0, 5).join('<br>');
     }
 
